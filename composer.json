@@ -12,7 +12,11 @@
 		"ext-mbstring": "*",
 		"kint-php/kint": "^3.3",
 		"laminas/laminas-escaper": "^2.6",
-		"psr/log": "^1.1"
+		"psr/log": "^1.1",
+		"mailgun/mailgun-php": "^4.3",
+		"nyholm/psr7": "^1.8",
+		"google/apiclient": "^2.0",
+		"phpmailer/phpmailer": "^6.9"
 	},
 	"require-dev": {
 		"codeigniter4/codeigniter4-standard": "^1.0",
@@ -43,5 +47,10 @@
 		"forum": "http://forum.codeigniter.com/",
 		"source": "https://github.com/codeigniter4/CodeIgniter4",
 		"slack": "https://codeigniterchat.slack.com"
+	},
+	"config": {
+		"allow-plugins": {
+			"php-http/discovery": true
+		}
 	}
 }

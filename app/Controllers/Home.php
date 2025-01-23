@@ -446,10 +446,44 @@ class Home extends BaseController
 		$karyawanModel = $db->table('karyawan');
 		$userModel = $db->table('user');
 
-		// Ambil semua data karyawan dan join dengan data user
-		$karyawans = $karyawanModel->select('karyawan.*, user.username')
-			->join('user', 'karyawan.id_user = user.id_user')
-			->get()->getResult();
+		// Get search keywords from query parameters
+		$searchUser = $this->request->getVar('search_user') ?? '';
+		$searchDivisi = $this->request->getVar('search_divisi') ?? '';
+
+		// Tentukan jumlah data per halaman
+		$perPage = 10;
+		$currentPage = $this->request->getVar('page') ?? 1;
+		$start = ($currentPage - 1) * $perPage;
+
+		// Build the query with conditions
+		$karyawanModel->select('karyawan.*, user.username')
+			->join('user', 'karyawan.id_user = user.id_user');
+
+		// Apply search filters
+		if (!empty($searchUser)) {
+			// Search by id_user or username
+			$karyawanModel->groupStart()
+				->like('user.username', $searchUser)
+				->orLike('karyawan.id_user', $searchUser)
+				->groupEnd();
+		}
+
+		if (!empty($searchDivisi)) {
+			// Search by divisi
+			$karyawanModel->like('karyawan.divisi', $searchDivisi);
+		}
+
+		// Paginate the result
+		$karyawans = $karyawanModel->limit($perPage, $start)->get()->getResult();
+
+		// Count total records for pagination
+		$totalRecords = $karyawanModel->countAllResults(false);
+
+		// Calculate total pages
+		$totalPages = ceil($totalRecords / $perPage);
+
+		// Pager service for pagination
+		$pager = \Config\Services::pager();
 
 		$settingModel = new SettingModel();
 		$setting = $settingModel->first(); // Ambil data pengaturan pertama
@@ -459,9 +493,16 @@ class Home extends BaseController
 		echo view('menu', [
 			'setting' => $setting,
 			'level' => $level
-		]); // Jika ada menu
-		echo view('karyawan', ['karyawans' => $karyawans]);
-		echo view('footer'); // Jika ada footer
+		]);
+		echo view('karyawan', [
+			'karyawans' => $karyawans,
+			'search_user' => $searchUser,
+			'search_divisi' => $searchDivisi,
+			'totalPages' => $totalPages,
+			'currentPage' => $currentPage,
+			'pager' => $pager
+		]);
+		echo view('footer');
 	}
 
 	public function editKaryawan($id_karyawan)
@@ -581,12 +622,12 @@ class Home extends BaseController
 			$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 			$mail->Port = 587;
 
-			$mail->setFrom('xanytopia@godaris.tech', 'Admin');
+			$mail->setFrom('xanytopia@godaris.tech', 'HRD');
 			$mail->addAddress($user['email'], $user['username']); // Alamat email tujuan
 
 			if ($status == 'Diterima') {
 				$mail->Subject = 'Lamaran Diterima';
-				$mail->Body = "Selamat! Lamaran Anda diterima dan status Anda diubah menjadi \"karyawan\". Anda diterima sebagai \"{$namaLowongan}\".";
+				$mail->Body = "Selamat! Lamaran Anda diterima sebagai \"{$namaLowongan}\".";
 			} else {
 				$mail->Subject = 'Lamaran Ditolak';
 				$mail->Body = 'Mohon maaf, lamaran Anda ditolak.';

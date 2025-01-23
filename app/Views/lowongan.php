@@ -69,7 +69,7 @@
                 <p class="text-muted">Browse through a list of job opportunities and apply today!</p>
                 <?php if ($level == 'HRD' || $level == 'admin'): ?>
                     <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addLowonganModal">
-                        Add New Job
+                        Add New Lowongan
                     </button>
                 <?php endif; ?>
             </div>
@@ -101,17 +101,19 @@
                                     <p><strong>ID:</strong> <?= esc($lowongan->id_lowongan) ?></p>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <?php if ($lowongan->sudah_lamar): ?>
-                                        <button class="btn btn-secondary btn-sm" disabled>Already Applied</button>
-                                    <?php else: ?>
-                                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#applyModal"
-                                            data-id="<?= esc($lowongan->id_lowongan) ?>">Apply Now</button>
+                                    <?php if ($level == 'Pelamar'): ?>
+                                        <?php if ($lowongan->sudah_lamar): ?>
+                                            <button class="btn btn-secondary btn-sm" disabled>Already Applied (Please wait for Email)</button>
+                                        <?php else: ?>
+                                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#applyModal"
+                                                data-id="<?= esc($lowongan->id_lowongan) ?>">Apply Now</button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if ($level == 'HRD' || $level == 'admin'): ?>
-                                        <button class="btn btn-warning btn-sm" data-id="<?= esc($lowongan->id_lowongan) ?>"
-                                            data-bs-toggle="modal" data-bs-target="#editLowonganModal">Edit</button>
+                                        <!-- <button class="btn btn-warning btn-sm" data-id="<?= esc($lowongan->id_lowongan) ?>"
+                                            data-bs-toggle="modal" data-bs-target="#editLowonganModal">Edit Lowongan</button> -->
                                         <a href="/home/deleteLowongan/<?= esc($lowongan->id_lowongan) ?>" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Are you sure you want to delete this job?')">Delete</a>
+                                            onclick="return confirm('Are you sure you want to delete this job?')">Close Lowongan</a>
                                     <?php endif; ?>
                                 </div>
                             </div>

@@ -13,6 +13,20 @@
         <div class="row">
             <div class="col-md-12">
                 <h3>Data Karyawan</h3>
+
+                <form action="/home/karyawan" method="get">
+                    <div class="mb-3 d-flex">
+                        <!-- Search by id_user or username -->
+                        <input type="text" name="search_user" class="form-control me-2" placeholder="Search by ID User or Username" value="<?= $search_user ?? '' ?>">
+
+                        <!-- Search by divisi -->
+                        <input type="text" name="search_divisi" class="form-control me-2" placeholder="Search by Divisi" value="<?= $search_divisi ?? '' ?>">
+
+                        <!-- Submit button -->
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </form>
+
                 <table class="table table-bordered">
                     <thead>
                         <tr>
@@ -28,7 +42,6 @@
                             <tr>
                                 <td><?= $karyawan->id_karyawan ?></td>
                                 <td><?= $karyawan->id_user ?> (<?= $karyawan->username ?>)</td>
-                                <!-- Menampilkan ID User dan Nama User -->
                                 <td><?= $karyawan->gaji ?></td>
                                 <td><?= $karyawan->divisi ?></td>
                                 <td>
@@ -39,6 +52,17 @@
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+
+                <!-- Nav pagination -->
+                <div class="d-flex justify-content-center">
+                    <?php if ($currentPage > 1): ?>
+                        <a href="?page=<?= $currentPage - 1 ?>" class="btn btn-primary">Previous</a>
+                    <?php endif; ?>
+
+                    <?php if ($currentPage < $totalPages): ?>
+                        <a href="?page=<?= $currentPage + 1 ?>" class="btn btn-primary">Next</a>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

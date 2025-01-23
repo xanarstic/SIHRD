@@ -228,9 +228,13 @@ class Home extends BaseController
 		$settingModel = new SettingModel();
 		$setting = $settingModel->first();
 
-		// Menghitung jumlah lowongan yang tersedia
+		// Menghitung jumlah lowongan
 		$lowonganModel = new LowonganModel();
-		$availableJobs = $lowonganModel->where('status', 'available')->countAllResults();
+		$totalLowongan = $lowonganModel->countAllResults();
+
+		// Menghitung jumlah karyawan
+		$karyawanModel = new KaryawanModel();
+		$totalKaryawan = $karyawanModel->countAllResults();
 
 		// Kirim data ke view
 		echo view('header', ['setting' => $setting]);
@@ -242,7 +246,8 @@ class Home extends BaseController
 			'username' => $username,
 			'level' => $level,
 			'greeting' => $greeting,
-			'availableJobs' => $availableJobs // Tambahkan jumlah lowongan yang tersedia
+			'totalLowongan' => $totalLowongan, // Total lowongan yang ada
+			'totalKaryawan' => $totalKaryawan  // Total karyawan yang ada
 		]);
 		echo view('footer');
 	}

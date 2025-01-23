@@ -25,35 +25,21 @@
                 <div class="col-md-3">
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title">Total Users</h5>
-                            <p class="card-text display-4">123</p>
+                            <h5 class="card-title">Total Lowongan</h5>
+                            <p class="card-text display-4"><?= $totalLowongan ?></p>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Logins Today</h5>
-                            <p class="card-text display-4">45</p>
+                <?php if ($level == 'HRD' || $level == 'admin'): ?>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Karyawan</h5>
+                                <p class="card-text display-4"><?= $totalKaryawan ?></p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Pending Tasks</h5>
-                            <p class="card-text display-4">7</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Available Jobs</h5>
-                            <p class="card-text display-4"><?= $availableJobs ?></p>
-                        </div>
-                    </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

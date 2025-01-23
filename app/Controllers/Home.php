@@ -8,10 +8,24 @@ use App\Models\LevelModel;
 use App\Models\SettingModel;
 use App\Models\LowonganModel;
 use App\Models\PelamarModel;
+use App\Models\KaryawanModel;
 use CodeIgniter\Files\File;
 use Config\Services;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+//0247 7381
+// 9430 4461
+// 7616 9172
+// 9476 5913
+// 3589 1794
+// 9867 2144
+// 3602 1547
+// 6082 9416
+// 1711 4892
+// 7576 5292
+//backup code xanytopia
+
 
 class Home extends BaseController
 {
@@ -269,20 +283,36 @@ class Home extends BaseController
 		$settingModel = new SettingModel();
 		$setting = $settingModel->first(); // Ambil data pengaturan pertama
 
-		// Model untuk mengakses data lowongan
 		$lowonganModel = new \App\Models\LowonganModel();
 		$pelamarModel = new \App\Models\PelamarModel();
-		$data['lowongans'] = $lowonganModel->findAll();
 
-		// Ambil semua lowongan
-		$lowongans = $lowonganModel->findAll();
+		// Ambil parameter pencarian dan halaman
+		$search = $this->request->getGet('search');
+		$page = $this->request->getGet('page') ?: 1; // Default ke halaman 1
+		$perPage = 12; // Jumlah data per halaman
 
-		// Periksa apakah user sudah melamar ke setiap lowongan
+		$builder = $lowonganModel->builder();
+		$builder->select('*');
+
+		// Filter pencarian
+		if ($search) {
+			$builder->like('nama_lowongan', $search);
+		}
+
+		// Pagination
+		$offset = ($page - 1) * $perPage;
+		$builder->limit($perPage, $offset);
+		$lowongans = $builder->get()->getResult();
+
+		// Periksa apakah user sudah melamar
 		foreach ($lowongans as $lowongan) {
 			$lowongan->sudah_lamar = $pelamarModel->where('id_user', $id_user)
 				->where('id_lowongan', $lowongan->id_lowongan)
 				->countAllResults() > 0; // True jika sudah melamar
 		}
+
+		// Total data untuk pagination
+		$total = $builder->countAllResults(false);
 
 		echo view('header', ['setting' => $setting]);
 		echo view('menu', [
@@ -292,7 +322,11 @@ class Home extends BaseController
 		echo view('lowongan', [
 			'setting' => $setting,
 			'lowongans' => $lowongans,
-			'level' => $level
+			'level' => $level,
+			'total' => $total,
+			'perPage' => $perPage,
+			'currentPage' => $page,
+			'search' => $search,
 		]);
 		echo view('footer');
 	}
@@ -458,20 +492,54 @@ class Home extends BaseController
 		$settingModel = new SettingModel();
 		$setting = $settingModel->first();
 
-		// Load data pelamar dengan join ke tabel users dan lowongan
+		// Get search keyword and filter
+		$search = $this->request->getVar('search') ?? '';
+		$filter = $this->request->getVar('filter') ?? 'id_user'; // Default filter
+		$status = $this->request->getVar('status') ?? 'Pending'; // Default status filter
+
+		// Get current page number
+		$currentPage = $this->request->getVar('page') ?? 1;
+
+		// Database connection
 		$db = \Config\Database::connect();
 		$builder = $db->table('pelamar');
 		$builder->select('pelamar.*, user.username, lowongan.nama_lowongan, lowongan.syarat');
 		$builder->join('user', 'pelamar.id_user = user.id_user', 'left');
 		$builder->join('lowongan', 'pelamar.id_lowongan = lowongan.id_lowongan', 'left');
+		$builder->where('pelamar.status', $status); // Filter by current status (Pending, Diterima, Ditolak)
+
+		// Search condition based on selected filter
+		if (!empty($search)) {
+			if ($filter === 'id_user') {
+				$builder->like('user.username', $search);
+			} elseif ($filter === 'id_lowongan') {
+				$builder->like('pelamar.id_lowongan', $search);
+			} else {
+				$builder->like('user.username', $search);
+			}
+		}
+
+		// Pagination setup
+		$perPage = 10;
+		$totalRecords = $builder->countAllResults(false); // Get total records without executing query
+		$builder->limit($perPage, ($currentPage - 1) * $perPage);
 		$pelamars = $builder->get()->getResultArray();
+
+		$totalPages = ceil($totalRecords / $perPage);
 
 		echo view('header', ['setting' => $setting]);
 		echo view('menu', [
 			'setting' => $setting,
 			'level' => $level
 		]);
-		echo view('lamar', ['pelamars' => $pelamars]); // Kirim data pelamar ke view
+		echo view('lamar', [
+			'pelamars' => $pelamars,
+			'search' => $search,
+			'filter' => $filter,
+			'status' => $status,
+			'currentPage' => $currentPage,
+			'totalPages' => $totalPages,
+		]);
 		echo view('footer');
 	}
 
@@ -479,6 +547,8 @@ class Home extends BaseController
 	{
 		$pelamarModel = new PelamarModel();
 		$userModel = new UserModel();
+		$lowonganModel = new LowonganModel();
+		$karyawanModel = new KaryawanModel(); // Tambahkan model Karyawan
 
 		$idPelamar = $this->request->getPost('id_pelamar');
 		$status = $this->request->getPost('status');
@@ -490,6 +560,10 @@ class Home extends BaseController
 			return redirect()->back()->with('error', 'Pelamar tidak ditemukan.');
 		}
 
+		// Ambil data lowongan berdasarkan id_lowongan di tabel pelamar
+		$lowongan = $lowonganModel->find($pelamar['id_lowongan']);
+		$namaLowongan = $lowongan ? $lowongan->nama_lowongan : 'Lowongan tidak ditemukan';
+
 		// Update status pelamar
 		$pelamarModel->update($idPelamar, ['status' => $status]);
 
@@ -500,19 +574,19 @@ class Home extends BaseController
 		$mail = new PHPMailer(true);
 		try {
 			$mail->isSMTP();
-			$mail->Host = 'smtp.gmail.com';  // Ganti dengan SMTP server yang sesuai
+			$mail->Host = 'smtp.gmail.com'; // SMTP server
 			$mail->SMTPAuth = true;
-			$mail->Username = 'your-email@gmail.com';  // Ganti dengan email pengirim
-			$mail->Password = 'your-email-password';  // Ganti dengan password email pengirim
+			$mail->Username = 'xanytopia@godaris.tech'; // Email pengirim
+			$mail->Password = 'lyjb cubq kgmi rqjr'; // API key Gmail
 			$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 			$mail->Port = 587;
 
-			$mail->setFrom('your-email@gmail.com', 'Admin');
-			$mail->addAddress($user['email'], $user['username']);  // Alamat email tujuan
+			$mail->setFrom('xanytopia@godaris.tech', 'Admin');
+			$mail->addAddress($user['email'], $user['username']); // Alamat email tujuan
 
 			if ($status == 'Diterima') {
 				$mail->Subject = 'Lamaran Diterima';
-				$mail->Body = 'Selamat! Lamaran Anda diterima dan status Anda diubah menjadi "Security".';
+				$mail->Body = "Selamat! Lamaran Anda diterima dan status Anda diubah menjadi \"karyawan\". Anda diterima sebagai \"{$namaLowongan}\".";
 			} else {
 				$mail->Subject = 'Lamaran Ditolak';
 				$mail->Body = 'Mohon maaf, lamaran Anda ditolak.';
@@ -520,19 +594,24 @@ class Home extends BaseController
 
 			// Kirim email
 			$mail->send();
-
 		} catch (Exception $e) {
-			echo "Pesan tidak dapat dikirim. Mailer Error: {$mail->ErrorInfo}";
+			return redirect()->back()->with('error', "Pesan tidak dapat dikirim. Error: {$mail->ErrorInfo}");
 		}
 
 		// Ubah id_level jika diterima
 		if ($status == 'Diterima') {
 			$userModel->update($pelamar['id_user'], ['id_level' => 2]);
+
+			// Tambahkan id_user ke tabel karyawan
+			$karyawanModel->insert([
+				'id_user' => $pelamar['id_user'],
+				'gaji' => null, // Set null atau default jika gaji belum diketahui
+				'divisi' => $namaLowongan, // Divisi disamakan dengan nama lowongan
+			]);
 		}
 
 		return redirect()->back()->with('success', 'Status pelamar diperbarui dan email dikirim.');
 	}
-
 
 	public function deletePelamar()
 	{
